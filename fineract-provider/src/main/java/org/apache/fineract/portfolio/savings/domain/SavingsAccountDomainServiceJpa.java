@@ -224,8 +224,8 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
         log.info("today"); 
         final LocalDate today = DateUtils.getBusinessLocalDate();
         log.info("postReversals"); 
-        boolean postReversals = this.configurationDomainService.isReversalTransactionAllowed();
-        //boolean postReversals = false;
+        //boolean postReversals = this.configurationDomainService.isReversalTransactionAllowed();
+        boolean postReversals = false;
         log.info("(account.isBeforeLastPostingPeriod(transactionDate, backdatedTxnsAllowedTill))"); 
         if (account.isBeforeLastPostingPeriod(transactionDate, backdatedTxnsAllowedTill)) {
             log.info("account.postInterest"); 
