@@ -18,6 +18,7 @@
  */
 package org.apache.fineract.portfolio.savings.domain;
 
+import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.time.LocalDate;
@@ -48,6 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainService {
 
@@ -84,34 +86,48 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail,
             final SavingsTransactionBooleanValues transactionBooleanValues, final boolean backdatedTxnsAllowedTill) {
         context.authenticatedUser();
+        log.info("account.validateForAccountBlock()");
         account.validateForAccountBlock();
+        log.info("account.validateForDebitBlock()");
         account.validateForDebitBlock();
-        final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
-                .isSavingsInterestPostingAtCurrentPeriodEnd();
+        log.info("isSavingsInterestPostingAtCurrentPeriodEnd");
+        final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService.isSavingsInterestPostingAtCurrentPeriodEnd();
+        log.info("relaxingDaysConfigForPivotDate");
         final Long relaxingDaysConfigForPivotDate = this.configurationDomainService.retrieveRelaxingDaysConfigForPivotDate();
+        log.info("postReversals");
         final boolean postReversals = this.configurationDomainService.isReversalTransactionAllowed();
+        log.info("financialYearBeginningMonth");
         final Integer financialYearBeginningMonth = this.configurationDomainService.retrieveFinancialYearBeginningMonth();
+        log.info("if (transactionBooleanValues.isRegularTransaction() && !account.allowWithdrawal())");
         if (transactionBooleanValues.isRegularTransaction() && !account.allowWithdrawal()) {
+            log.info("DepositAccountTransactionNotAllowedException");
             throw new DepositAccountTransactionNotAllowedException(account.getId(), "withdraw", account.depositAccountType());
         }
+        log.info("existingTransactionIds");
         final Set<Long> existingTransactionIds = new HashSet<>();
+        log.info("postInterestOnDate");
         final LocalDate postInterestOnDate = null;
+        log.info("existingReversedTransactionIds");
         final Set<Long> existingReversedTransactionIds = new HashSet<>();
-
+        log.info("(backdatedTxnsAllowedTill)");
         if (backdatedTxnsAllowedTill) {
+            log.info("(updateTransactionDetailsWithPivotConfig)");
             updateTransactionDetailsWithPivotConfig(account, existingTransactionIds, existingReversedTransactionIds);
         } else {
+            log.info("(updateExistingTransactionsDetails)");
             updateExistingTransactionsDetails(account, existingTransactionIds, existingReversedTransactionIds);
         }
-
+        log.info("accountType");
         Integer accountType = null;
-        final SavingsAccountTransactionDTO transactionDTO = new SavingsAccountTransactionDTO(fmt, transactionDate, transactionAmount,
-                paymentDetail, null, accountType);
+        log.info("transactionDTO");
+        final SavingsAccountTransactionDTO transactionDTO = new SavingsAccountTransactionDTO(fmt, transactionDate, transactionAmount, paymentDetail, null, accountType);
+        log.info("refNo");
         UUID refNo = UUID.randomUUID();
-        final SavingsAccountTransaction withdrawal = account.withdraw(transactionDTO, transactionBooleanValues.isApplyWithdrawFee(),
-                backdatedTxnsAllowedTill, relaxingDaysConfigForPivotDate, refNo.toString());
+        log.info("SavingsAccountTransaction");
+        final SavingsAccountTransaction withdrawal = account.withdraw(transactionDTO, transactionBooleanValues.isApplyWithdrawFee(), backdatedTxnsAllowedTill, relaxingDaysConfigForPivotDate, refNo.toString());
+        log.info("MathContext");
         final MathContext mc = MathContext.DECIMAL64;
-
+        log.info("LocalDate"); 
         final LocalDate today = DateUtils.getBusinessLocalDate();
 
         if (account.isBeforeLastPostingPeriod(transactionDate, backdatedTxnsAllowedTill)) {
@@ -160,58 +176,79 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail,
             final boolean isAccountTransfer, final boolean isRegularTransaction,
             final SavingsAccountTransactionType savingsAccountTransactionType, final boolean backdatedTxnsAllowedTill) {
+        log.info("authenticatedUser"); 
         context.authenticatedUser();
+        log.info("validateForAccountBlock"); 
         account.validateForAccountBlock();
+        log.info("validateForCreditBlock"); 
         account.validateForCreditBlock();
-
+        log.info("isSavingsInterestPostingAtCurrentPeriodEnd"); 
         // Global configurations
-        final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService
-                .isSavingsInterestPostingAtCurrentPeriodEnd();
+        final boolean isSavingsInterestPostingAtCurrentPeriodEnd = this.configurationDomainService.isSavingsInterestPostingAtCurrentPeriodEnd();
+        log.info("financialYearBeginningMonth"); 
         final Integer financialYearBeginningMonth = this.configurationDomainService.retrieveFinancialYearBeginningMonth();
+        log.info("relaxingDaysConfigForPivotDate"); 
         final Long relaxingDaysConfigForPivotDate = this.configurationDomainService.retrieveRelaxingDaysConfigForPivotDate();
+        log.info("(isRegularTransaction && !account.allowDeposit())"); 
         if (isRegularTransaction && !account.allowDeposit()) {
+            log.info("DepositAccountTransactionNotAllowedException"); 
             throw new DepositAccountTransactionNotAllowedException(account.getId(), "deposit", account.depositAccountType());
         }
+        log.info("isInterestTransfer"); 
         boolean isInterestTransfer = false;
+        log.info("existingTransactionIds"); 
         final Set<Long> existingTransactionIds = new HashSet<>();
+        log.info("existingReversedTransactionIds"); 
         final Set<Long> existingReversedTransactionIds = new HashSet<>();
-
+        log.info("backdatedTxnsAllowedTill"); 
         if (backdatedTxnsAllowedTill) {
+            log.info("updateTransactionDetailsWithPivotConfig"); 
             updateTransactionDetailsWithPivotConfig(account, existingTransactionIds, existingReversedTransactionIds);
         } else {
+            log.info("updateExistingTransactionsDetails"); 
             updateExistingTransactionsDetails(account, existingTransactionIds, existingReversedTransactionIds);
         }
-
+        log.info("accountType"); 
         Integer accountType = null;
-        final SavingsAccountTransactionDTO transactionDTO = new SavingsAccountTransactionDTO(fmt, transactionDate, transactionAmount,
-                paymentDetail, null, accountType);
+        log.info("transactionDTO"); 
+        final SavingsAccountTransactionDTO transactionDTO = new SavingsAccountTransactionDTO(fmt, transactionDate, transactionAmount, paymentDetail, null, accountType);
+        log.info("refNo"); 
         UUID refNo = UUID.randomUUID();
-        final SavingsAccountTransaction deposit = account.deposit(transactionDTO, savingsAccountTransactionType, backdatedTxnsAllowedTill,
-                relaxingDaysConfigForPivotDate, refNo.toString());
+        log.info("deposit"); 
+        final SavingsAccountTransaction deposit = account.deposit(transactionDTO, savingsAccountTransactionType, backdatedTxnsAllowedTill, relaxingDaysConfigForPivotDate, refNo.toString());
+        log.info("postInterestOnDate"); 
         final LocalDate postInterestOnDate = null;
+        log.info("mc"); 
         final MathContext mc = MathContext.DECIMAL64;
-
+        log.info("today"); 
         final LocalDate today = DateUtils.getBusinessLocalDate();
+        log.info("postReversals"); 
         boolean postReversals = this.configurationDomainService.isReversalTransactionAllowed();
+        log.info("(account.isBeforeLastPostingPeriod(transactionDate, backdatedTxnsAllowedTill))"); 
         if (account.isBeforeLastPostingPeriod(transactionDate, backdatedTxnsAllowedTill)) {
+            log.info("account.postInterest"); 
             account.postInterest(mc, today, isInterestTransfer, isSavingsInterestPostingAtCurrentPeriodEnd, financialYearBeginningMonth,
                     postInterestOnDate, backdatedTxnsAllowedTill, postReversals);
         } else {
+            log.info("account.calculateInterestUsing"); 
             account.calculateInterestUsing(mc, today, isInterestTransfer, isSavingsInterestPostingAtCurrentPeriodEnd,
                     financialYearBeginningMonth, postInterestOnDate, backdatedTxnsAllowedTill, postReversals);
         }
-
+        log.info("saveTransactionToGenerateTransactionId");
         saveTransactionToGenerateTransactionId(deposit);
-
+        log.info("(backdatedTxnsAllowedTill)");
         if (backdatedTxnsAllowedTill) {
             // Update transactions separately
+            log.info("saveUpdatedTransactionsOfSavingsAccount");
             saveUpdatedTransactionsOfSavingsAccount(account.getSavingsAccountTransactionsWithPivotConfig());
         }
-
+        log.info("this.savingsAccountRepository.saveAndFlush(account)");
         this.savingsAccountRepository.saveAndFlush(account);
-
+        log.info("postJournalEntries");
         postJournalEntries(account, existingTransactionIds, existingReversedTransactionIds, isAccountTransfer, backdatedTxnsAllowedTill);
+        log.info("businessEventNotifierService.notifyPostBusinessEvent");
         businessEventNotifierService.notifyPostBusinessEvent(new SavingsDepositBusinessEvent(deposit));
+        log.info("deposit");
         return deposit;
     }
 
