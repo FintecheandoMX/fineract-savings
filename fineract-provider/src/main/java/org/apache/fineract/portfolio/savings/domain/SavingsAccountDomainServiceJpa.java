@@ -176,6 +176,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
             final LocalDate transactionDate, final BigDecimal transactionAmount, final PaymentDetail paymentDetail,
             final boolean isAccountTransfer, final boolean isRegularTransaction,
             final SavingsAccountTransactionType savingsAccountTransactionType, final boolean backdatedTxnsAllowedTill) {
+        log.info("valor de backdatedTxnsAllowedTill "+backdatedTxnsAllowedTill);
         log.info("authenticatedUser"); 
         context.authenticatedUser();
         log.info("validateForAccountBlock"); 
@@ -223,8 +224,8 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
         log.info("today"); 
         final LocalDate today = DateUtils.getBusinessLocalDate();
         log.info("postReversals"); 
-        //boolean postReversals = this.configurationDomainService.isReversalTransactionAllowed();
-        boolean postReversals = false;
+        boolean postReversals = this.configurationDomainService.isReversalTransactionAllowed();
+        //boolean postReversals = false;
         log.info("(account.isBeforeLastPostingPeriod(transactionDate, backdatedTxnsAllowedTill))"); 
         if (account.isBeforeLastPostingPeriod(transactionDate, backdatedTxnsAllowedTill)) {
             log.info("account.postInterest"); 
@@ -236,7 +237,7 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
                     financialYearBeginningMonth, postInterestOnDate, backdatedTxnsAllowedTill, postReversals);
         }
         log.info("saveTransactionToGenerateTransactionId");
-        saveTransactionToGenerateTransactionId(deposit);
+        saveTransaction(deposit);
         log.info("(backdatedTxnsAllowedTill)");
         if (backdatedTxnsAllowedTill) {
             // Update transactions separately
@@ -282,6 +283,13 @@ public class SavingsAccountDomainServiceJpa implements SavingsAccountDomainServi
     private Long saveTransactionToGenerateTransactionId(final SavingsAccountTransaction transaction) {
         this.savingsAccountTransactionRepository.saveAndFlush(transaction);
         return transaction.getId();
+    }
+    
+    private void saveTransaction(final SavingsAccountTransaction transaction) {
+        log.info("previo a salvar la Transaccion");
+        this.savingsAccountTransactionRepository.saveAndFlush(transaction);
+        log.info("Transaccion salvada");
+        //return transaction.getId();
     }
 
     private void saveUpdatedTransactionsOfSavingsAccount(final List<SavingsAccountTransaction> savingsAccountTransactions) {
